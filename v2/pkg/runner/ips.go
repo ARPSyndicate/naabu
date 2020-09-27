@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/projectdiscovery/naabu/pkg/scan"
+	"github.com/projectdiscovery/naabu/v2/pkg/scan"
 )
 
 func parseExcludedIps(options *Options) (map[string]struct{}, error) {
@@ -21,6 +21,12 @@ func parseExcludedIps(options *Options) (map[string]struct{}, error) {
 			return nil, fmt.Errorf("could not read ips: %s", err)
 		}
 		allIps = append(allIps, strings.Split(string(data), "\n")...)
+	}
+
+	if options.config != nil {
+		for _, excludeIp := range options.config.ExcludeIps {
+			allIps = append(allIps, strings.Split(excludeIp, ",")...)
+		}
 	}
 
 	for _, ip := range allIps {

@@ -13,18 +13,13 @@ import (
 func (options *Options) validateOptions() error {
 	// Check if Host, list of domains, or stdin info was provided.
 	// If none was provided, then return.
-	if options.Host == "" && options.HostsFile == "" && !options.Stdin && len(flag.Args()) == 0 {
+	if options.Host == "" && options.HostsFile == "" && !options.Stdin && len(flag.Args()) == 0 && (options.config != nil && len(options.config.Host) == 0) {
 		return errors.New("no input list provided")
 	}
 
 	// Both verbose and silent flags were used
 	if options.Verbose && options.Silent {
 		return errors.New("both verbose and silent mode specified")
-	}
-
-	// Validate threads and options
-	if options.Threads == 0 {
-		return errors.New("threads cannot be zero")
 	}
 
 	if options.Timeout == 0 {

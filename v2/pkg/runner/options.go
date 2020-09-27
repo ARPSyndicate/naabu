@@ -14,7 +14,6 @@ type Options struct {
 	Rate               int    // Rate is the rate of port scan requests
 	Verbose            bool   // Verbose flag indicates whether to show verbose output or not
 	NoColor            bool   // No-Color disables the colored output
-	Threads            int    // Thread controls the number of parallel host to enumerate
 	Timeout            int    // Timeout is the seconds to wait for ports to respond
 	Host               string // Host is the host to find ports for
 	HostsFile          string // HostsFile is the file containing list of hosts to find port for
@@ -37,12 +36,20 @@ type Options struct {
 	Privileged         bool   // Attempts to run as root
 	Unprivileged       bool   // Drop root privileges
 	ExcludeCDN         bool   // Excludes ip of knows CDN ranges for full port scan
-	IcmpEchoProbe      bool   // Probe for Icmp Echo 
+	IcmpEchoProbe      bool   // Probe for Icmp Echo
 	IcmpTimestampProbe bool
-	SourceIp           string
-	Interface          string
-	WarmUpTime         int
-	InterfacesList     bool
+	// SourceIp to use in TCP packets
+	SourceIp string
+	// Interface to use for TCP packets
+	Interface string
+	// WarmUpTime between scan phases
+	WarmUpTime int
+	// InterfacesList show interfaces list
+	InterfacesList bool
+	// Config file contains a scan configuration
+	ConfigFile string
+	config     *ConfigFile
+	Nmap       bool // Invoke nmap detailed scan on results
 }
 
 // ParseOptions parses the command line flags provided by a user
@@ -66,7 +73,6 @@ func ParseOptions() *Options {
 	flag.IntVar(&options.Rate, "rate", DefaultRateSynScan, "Rate of port scan probe requests")
 	flag.BoolVar(&options.Verbose, "v", false, "Show Verbose output")
 	flag.BoolVar(&options.NoColor, "nC", false, "Don't Use colors in output")
-	flag.IntVar(&options.Threads, "t", DefaultResolverThreads, "Number of concurrent goroutines for resolving")
 	flag.IntVar(&options.Timeout, "timeout", DefaultPortTimeoutSynScan, "Millisecond to wait before timing out")
 	flag.StringVar(&options.ExcludePorts, "exclude-ports", "", "Ports to exclude from enumeration")
 	flag.BoolVar(&options.Verify, "verify", false, "Validate the ports again with TCP verification")
@@ -81,6 +87,9 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.ExcludeCDN, "exclude-cdn", false, "Sikp full port scans for CDNs (only checks for 80,443)")
 	flag.IntVar(&options.WarmUpTime, "warm-up-time", 2, "Time in seconds between scan phases")
 	flag.BoolVar(&options.InterfacesList, "interface-list", false, "List available interfaces and public ip")
+	flag.StringVar(&options.ConfigFile, "config", "", "Config file")
+	flag.BoolVar(&options.Nmap, "nmap", false, "Invoke nmap scan on targets (nmap must be installed)")
+
 	flag.Parse()
 
 	// Check if stdin pipe was given
@@ -92,6 +101,9 @@ func ParseOptions() *Options {
 	// Show the user the banner
 	showBanner()
 
+	// write default conf file template if it doesn't exist
+	options.writeDefaultConfig()
+
 	if options.Version {
 		gologger.Infof("Current Version: %s\n", Version)
 		os.Exit(0)
@@ -101,6 +113,17 @@ func ParseOptions() *Options {
 	if options.InterfacesList {
 		showNetworkInterfaces()
 		os.Exit(0)
+	}
+
+	// If a config file is provided, merge the options
+	if options.ConfigFile != "" {
+		options.MergeFromConfig(options.ConfigFile, false)
+	} else {
+		defaultConfigPath, err := getDefaultConfigFile()
+		if err != nil {
+			gologger.Errorf("Program exiting: %s\n", err)
+		}
+		options.MergeFromConfig(defaultConfigPath, true)
 	}
 
 	// Validate the options passed by the user and if any
@@ -128,4 +151,46 @@ func hasStdin() bool {
 	}
 
 	return fi.Mode()&os.ModeNamedPipe != 0
+}
+
+func (options *Options) MergeFromConfig(configFileName string, ignoreError bool) {
+	configFile, err := UnmarshalRead(configFileName)
+	if err != nil {
+		if ignoreError {
+			gologger.Warningf("Could not read configuration file %s: %s\n", configFileName, err)
+			return
+		}
+		gologger.Fatalf("Could not read configuration file %s: %s\n", configFileName, err)
+	}
+	options.config = &configFile
+
+	if configFile.Retries > 0 {
+		options.Retries = configFile.Retries
+	}
+	if configFile.Rate > 0 {
+		options.Rate = configFile.Rate
+	}
+	if configFile.Timeout > 0 {
+		options.Timeout = configFile.Timeout
+	}
+	options.Verify = configFile.Verify
+	options.NoProbe = configFile.NoProbe
+	options.Ping = configFile.Ping
+	if configFile.TopPorts != "" {
+		options.TopPorts = configFile.TopPorts
+	}
+	options.Privileged = configFile.Privileged
+	options.Unprivileged = configFile.Unprivileged
+	options.ExcludeCDN = configFile.ExcludeCDN
+	options.IcmpEchoProbe = configFile.IcmpEchoProbe
+	options.IcmpTimestampProbe = configFile.IcmpTimestampProbe
+	if configFile.SourceIp != "" {
+		options.SourceIp = configFile.SourceIp
+	}
+	if configFile.Interface != "" {
+		options.Interface = configFile.Interface
+	}
+	if configFile.WarmUpTime > 0 {
+		options.WarmUpTime = configFile.WarmUpTime
+	}
 }

@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/naabu/pkg/scan"
+	"github.com/projectdiscovery/naabu/v2/pkg/scan"
 )
 
 func (r *Runner) Load() error {
@@ -41,6 +41,13 @@ func (r *Runner) Load() error {
 	// all additional non-named cli arguments are interpreted as targets
 	for _, target := range flag.Args() {
 		r.AddTarget(target)
+	}
+
+	// handles targets from config file if provided
+	if r.options.config != nil {
+		for _, target := range r.options.config.Host {
+			r.AddTarget(target)
+		}
 	}
 
 	if len(r.scanner.Targets) == 0 {
