@@ -37,9 +37,9 @@ func NewRunner(options *Options) (*Runner, error) {
 		Root:    isRoot(),
 		Cdn:     !options.ExcludeCDN,
 	})
-	if err != nil {
-		return nil, err
-	}
+	//if err != nil {
+	//	return nil, err
+	//}
 	runner.scanner = scanner
 
 	runner.scanner.Ports, err = ParsePorts(options)
@@ -77,10 +77,10 @@ func (r *Runner) SetSourceIPAndInterface() error {
 
 // RunEnumeration runs the ports enumeration flow on the targets specified
 func (r *Runner) RunEnumeration() error {
-	//err := r.Load()
-	//if err != nil {
-	//	return err
-	//}
+	err := r.Load()
+	if err != nil {
+		return err
+	}
 
 	if !isRoot() {
 		// Connect Scan - perform ports spray scan
