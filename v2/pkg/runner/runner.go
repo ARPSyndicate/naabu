@@ -77,7 +77,7 @@ func (r *Runner) SetSourceIPAndInterface() error {
 
 // RunEnumeration runs the ports enumeration flow on the targets specified
 func (r *Runner) RunEnumeration() error {
-	err := r.Load()
+	//err := r.Load()
 	//if err != nil {
 	//	return err
 	//}
