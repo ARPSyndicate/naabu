@@ -16,7 +16,7 @@ func main() {
 	}
 
 	err = naabuRunner.RunEnumeration()
-	//if err != nil {
-	//	gologger.Fatalf("Could not run enumeration: %s\n", err)
-	//}
+	if err != nil {
+		gologger.Fatalf("Could not run enumeration: %s\n", err)
+	}
 }
