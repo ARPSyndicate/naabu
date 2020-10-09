@@ -28,11 +28,11 @@ func (r *Runner) Load() error {
 		}
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
-			err := r.AddTarget(scanner.Text())
-			if err != nil {
-				f.Close()
-				return err
-			}
+			r.AddTarget(scanner.Text())
+			//if err != nil {
+			//	f.Close()
+			//	return err
+			//}
 		}
 		f.Close()
 	}
