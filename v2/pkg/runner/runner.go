@@ -37,9 +37,9 @@ func NewRunner(options *Options) (*Runner, error) {
 		Root:    isRoot(),
 		Cdn:     !options.ExcludeCDN,
 	})
-	//if err != nil {
-	//	return nil, err
-	//}
+	if err != nil {
+		return nil, err
+	}
 	runner.scanner = scanner
 
 	runner.scanner.Ports, err = ParsePorts(options)
@@ -53,9 +53,9 @@ func NewRunner(options *Options) (*Runner, error) {
 	}
 
 	runner.scanner.ExcludedIps, err = parseExcludedIps(options)
-	if err != nil {
-		return nil, err
-	}
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	runner.scanner.Targets = make(map[string]map[string]struct{})
 
